@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Sample Project" default="main" basedir=".">
+
+    <property name="source.dir" location="src/main/java" />
+    <property name="test.dir" location="src/test/java" />
+    <property name="build.dir" location="bin" />
+    <property name="doc.dir" location="doc" />
+    <property name="jar.dir" location="jar" />
+    <property name="lib.dir" location="lib" />
+    <property name="report.dir" location="testreport" />
+
+    <fail message="Ant 1.10.4+ is required!">
+        <condition>
+            <not>
+                <antversion atleast="1.10.4" />
+            </not>
+        </condition>
+    </fail>
+
+    <path id="test.classpath">
+        <pathelement path="${build.dir}/test" />
+        <pathelement path="${build.dir}/main" />
+        <fileset dir="${lib.dir}" includes="*.jar" />
+    </path>
+
+    <target name="init">
+        <mkdir dir="${build.dir}" />
+        <mkdir dir="${doc.dir}" />
+        <mkdir dir="${build.dir}/main" />
+        <mkdir dir="${build.dir}/test" />
+        <mkdir dir="${report.dir}" />
+    </target>
+
+    <target name="compileTest" depends="init">
+        <javac destdir="${build.dir}/main" srcdir="${source.dir}" includeantruntime="false" />
+        <javac destdir="${build.dir}/test" classpathref="test.classpath" srcdir="${test.dir}" includeantruntime="false" />
+    </target>
+
+    <!-- https://junit.org/junit5/docs/snapshot/user-guide/#running-tests-build-ant -->
+    <target name="test.junit.launcher" depends="compileTest">
+        <junitlauncher haltOnFailure="true" printSummary="true">
+            <classpath refid="test.classpath" />
+            <testclasses outputdir="${report.dir}">
+                <fileset dir="${build.dir}/test">
+                    <include name="**/*Test.class" />
+                </fileset>
+                <listener type="legacy-xml" sendSysOut="true" sendSysErr="true" />
+                <listener type="legacy-plain" sendSysOut="true" />
+            </testclasses>
+        </junitlauncher>
+    </target>
+
+    <!-- https://junit.org/junit5/docs/current/user-guide/#running-tests-console-launcher -->
+    <target name="test.console.launcher" depends="compileTest">
+        <java classpathref="test.classpath" classname="org.junit.platform.console.ConsoleLauncher" fork="true" failonerror="true">
+            <arg value="--scan-classpath" />
+            <arg line="--reports-dir ${report.dir}" />
+        </java>
+        <junitreport todir="${report.dir}">
+            <fileset dir="${report.dir}">
+                <include name="TEST-*.xml" />
+            </fileset>
+            <report format="frames" todir="${report.dir}/html" />
+        </junitreport>
+    </target>
+
+    <target name="test" depends="test.junit.launcher, test.console.launcher" />
+
+    <!-- Compile the java code in ${src.dir} into ${build.dir} -->
+    <target name="compile" description="compile java sources">
+        <javac srcdir="${source.dir}" destdir="${build.dir}" />
+    </target>
+
+    <!-- Generate javadocs for current project into ${doc.dir} -->
+    <target name="doc" description="generate documentation">
+        <javadoc sourcepath="${source.dir}" destdir="${doc.dir}" />
+    </target>
+
+    <!-- Delete the build & doc directories and Emacs backup (*~) files -->
+    <target name="clean" description="tidy up the workspace">
+        <delete dir="${build.dir}" />
+        <delete dir="${doc.dir}" />
+        <delete dir="${jar.dir}" />
+        <delete dir="${report.dir}" />
+        <delete>
+            <fileset defaultexcludes="no" dir="${source.dir}" includes="**/*~" />
+        </delete>
+    </target>
+
+    <!-- Generate javadocs for current project into ${doc.dir} -->
+    <target name="jar" description="generate documentation">
+        <jar basedir="${build.dir}" destfile="${jar.dir}/aplicacao.jar" />
+    </target>
+
+
+
+    <target name="main" depends="clean, init, compile, test, jar, doc">
+        <description>Main target</description>
+    </target>
+
+</project>
